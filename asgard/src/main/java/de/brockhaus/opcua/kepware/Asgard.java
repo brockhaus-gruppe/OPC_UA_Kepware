@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -56,139 +57,148 @@ import com.prosysopc.ua.nodes.UaType;
 import com.prosysopc.ua.nodes.UaVariable;
 import com.prosysopc.ua.types.opcua.AnalogItemType;
 
+/**
+ * 
+ * @author jperez@brockhaus-gruppe.de, Nov 16, 2015
+ * Copyright by: Brockhaus Group (Wiesbaden, Heidelberg, Bhubaneswar/India)
+ *
+ */
+
 public class Asgard 
 {
-	// Attributes
+	
+	/** */
 	static UaClient client;
+	
 	static final String SERVERURI = "opc.tcp://127.0.0.1:49320";
+	
 	NodeId target;
+	
+	ArrayList<NodeId> TagsArray = new ArrayList<NodeId>();
+	
 	List<ReferenceDescription> references;
 	UnsignedInteger attributeId = UnsignedInteger.valueOf(13);
 	Subscription subscription = new Subscription();
-	Logger log = Logger.getLogger(Asgard.class.getName());
-	
+	Logger log = Logger.getLogger(this.getClass().getName());
+
 	// Constructor
-	public Asgard() throws FileNotFoundException, IOException
-	{
+	public Asgard() throws FileNotFoundException, IOException {
 		Properties props = new Properties();
 		props.load(new FileInputStream("src/main/resources/log4j.properties"));
 		PropertyConfigurator.configure(props);
 	}
-	
+
 	// Methods
-	public void init() throws URISyntaxException, UnknownHostException, SecureIdentityException, IOException
-	{
+	public void init() throws URISyntaxException, UnknownHostException, SecureIdentityException, IOException {
 		client = new UaClient(SERVERURI);
 		client.setSecurityMode(SecurityMode.NONE);
 		initialize(client);
 		log.info("[-- STARTING INITIAL SETUP --]");
 	}
-	
-	public void connect() throws InvalidServerEndpointException, ConnectException, SessionActivationException, ServiceException
-	{
+
+	public void connect()
+			throws InvalidServerEndpointException, ConnectException, SessionActivationException, ServiceException {
 		client.connect();
 		log.info("[-- CONNECTED TO THE SERVER --]");
 	}
-	
-	public void doRead() throws ServiceException, StatusException, ServiceResultException, InterruptedException
-	{
+
+	public void doRead() throws ServiceException, StatusException, ServiceResultException, InterruptedException {
 		// select the root node & browse the references for the root node
 		NodeId nodeId = Identifiers.RootFolder;
 		browse(nodeId);
-		
+
 		// select the Objects node & browse the references for this node
 		nodeId = selectNode(1);
 		browse(nodeId);
-		
+
 		// select the Channel node "Siemens PLC S7-1200" & browse its references
 		nodeId = selectNode(14);
 		browse(nodeId);
-		
+
 		// select the Device node "s7-1200" & browse its references
 		nodeId = selectNode(2);
 		browse(nodeId);
-		
+
+		// select the node "Inputs" & browse its references
+		nodeId = selectNode(3);
+		browse(nodeId);
+
+		// select the tags corresponding to "Inputs"
+		int[] tags = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+		for (int i = 0; i < tags.length; i++)
+			TagsArray.add(i, selectNode(tags[i]));
+
+		// subscribe to data changes for the selected tags
+		subscribe(TagsArray);
+
+		log.info("[-- READING VALUES FROM THE SERVER NODE --]");
+		while(true);
+//		Thread.sleep(10000);
+	}
+
+	public void doWrite() throws ServiceException, StatusException, ServiceResultException, InterruptedException,
+			AddressSpaceException {
+		// select the root node & browse the references for the root node
+		NodeId nodeId = Identifiers.RootFolder;
+		browse(nodeId);
+
+		// select the Objects node & browse the references for this node
+		nodeId = selectNode(1);
+		browse(nodeId);
+
+		// select the Channel node "Siemens PLC S7-1200" & browse its references
+		nodeId = selectNode(14);
+		browse(nodeId);
+
+		// select the Device node "s7-1200" & browse its references
+		nodeId = selectNode(2);
+		browse(nodeId);
+
 		// select the Tags node "Inputs" & browse its references
 		nodeId = selectNode(3);
 		browse(nodeId);
-		
-		// select the Tags node "Push-button slider 1 front" & browse its references
+
+		// select the Tags node "Push-button slider 1 front" & browse its
+		// references
 		nodeId = selectNode(5);
 		browse(nodeId);
-		
+
 		// subscribe to data changes
-		subscribe(nodeId);
-	}
-	
-	public void doWrite() throws ServiceException, StatusException, ServiceResultException, InterruptedException, AddressSpaceException
-	{
-		// select the root node & browse the references for the root node
-				NodeId nodeId = Identifiers.RootFolder;
-				browse(nodeId);
-				
-				// select the Objects node & browse the references for this node
-				nodeId = selectNode(1);
-				browse(nodeId);
-				
-				// select the Channel node "Siemens PLC S7-1200" & browse its references
-				nodeId = selectNode(14);
-				browse(nodeId);
-				
-				// select the Device node "s7-1200" & browse its references
-				nodeId = selectNode(2);
-				browse(nodeId);
-				
-				// select the Tags node "Inputs" & browse its references
-				nodeId = selectNode(3);
-				browse(nodeId);
-				
-				// select the Tags node "Push-button slider 1 front" & browse its references
-				nodeId = selectNode(5);
-				browse(nodeId);
-		
-		// subscribe to data changes
-		subscribe(nodeId);
-	
+		// subscribe(nodeId);
+
 		// write values
-		write(nodeId);	
+		write(nodeId);
 	}
-	
-	public void disconnect() throws ServiceException
-	{
+
+	public void disconnect() throws ServiceException {
 		client.removeSubscription(subscription);
 		client.disconnect();
-		log.info("[-- DISCONNECTED FROM THE SERVER --]");
 		println("");
+		log.info("[-- DISCONNECTED FROM THE SERVER --]");
+
 	}
-	
-	public void printf(String s)
-	{
+
+	public void printf(String s) {
 		System.out.printf(s);
 	}
-	
-	public void print(String s)
-	{
+
+	public void print(String s) {
 		System.out.print(s);
 	}
-	
-	public static void println(String s)
-	{
+
+	public static void println(String s) {
 		System.out.println(s);
 	}
-	
-	public static void println(Exception e)
-	{
+
+	public static void println(Exception e) {
 		System.out.println(e);
 	}
-	
-	public static void printf(String format, Object... args) 
-	{
+
+	public static void printf(String format, Object... args) {
 		System.out.printf(format, args);
 	}
-	
-	public static void initialize(UaClient client)
-			throws SecureIdentityException, IOException, UnknownHostException 
-	{
+
+	public static void initialize(UaClient client) throws SecureIdentityException, IOException, UnknownHostException {
 		// *** Application Description is sent to the server
 		ApplicationDescription appDescription = new ApplicationDescription();
 		appDescription.setApplicationName(new LocalizedText("OpcuaClient", Locale.ENGLISH));
@@ -202,9 +212,8 @@ public class Asgard
 		identity.setApplicationDescription(appDescription);
 		client.setApplicationIdentity(identity);
 	}
-	
-	public void browse(NodeId nodeId) throws ServiceException, StatusException
-	{
+
+	public void browse(NodeId nodeId) throws ServiceException, StatusException {
 		printCurrentNode(nodeId);
 		client.getAddressSpace().setMaxReferencesPerNode(1000);
 		client.getAddressSpace().setReferenceTypeId(Identifiers.HierarchicalReferences);
@@ -214,43 +223,34 @@ public class Asgard
 			printf("%d - %s\n", i, referenceToString(references.get(i)));
 		println("");
 	}
-	
-	protected void printCurrentNode(NodeId nodeId) 
-	{
+
+	protected void printCurrentNode(NodeId nodeId) {
 		log.info("[-- SELECTED NODE --]");
 		if (client.isConnected())
 			// Find the node from the NodeCache
-			try 
-			{
+			try {
 				UaNode node = client.getAddressSpace().getNode(nodeId);
 
 				if (node == null)
 					return;
 				String currentNodeStr = getCurrentNodeAsString(node);
-				if (currentNodeStr != null) 
-				{
+				if (currentNodeStr != null) {
 					println(currentNodeStr);
 					println("");
 				}
-			} 
-			catch (ServiceException e) 
-			{
+			} catch (ServiceException e) {
 				println(e);
-			} 
-			catch (AddressSpaceException e) 
-			{
+			} catch (AddressSpaceException e) {
 				println(e);
 			}
 	}
-	
+
 	protected String referenceToString(ReferenceDescription r)
-			throws ServerConnectionException, ServiceException, StatusException 
-	{
+			throws ServerConnectionException, ServiceException, StatusException {
 		if (r == null)
 			return "";
 		String referenceTypeStr = null;
-		try 
-		{
+		try {
 			// Find the reference type from the NodeCache
 			UaReferenceType referenceType = (UaReferenceType) client.getAddressSpace().getType(r.getReferenceTypeId());
 			if ((referenceType != null) && (referenceType.getDisplayName() != null))
@@ -258,46 +258,38 @@ public class Asgard
 					referenceTypeStr = referenceType.getDisplayName().getText();
 				else
 					referenceTypeStr = referenceType.getInverseName().getText();
-		} 
-		catch (AddressSpaceException e) 
-		{
+		} catch (AddressSpaceException e) {
 			println(e);
 			print(r.toString());
 			referenceTypeStr = r.getReferenceTypeId().getValue().toString();
 		}
 		String typeStr;
-		switch (r.getNodeClass()) 
-		{
-			case Object:
-			case Variable:
-				try 
-				{
-					// Find the type from the NodeCache
-					UaNode type = client.getAddressSpace().getNode(r.getTypeDefinition());
-					if (type != null)
-						typeStr = type.getDisplayName().getText();
-					else
-						typeStr = r.getTypeDefinition().getValue().toString();
-				} 
-				catch (AddressSpaceException e) 
-				{
-					println(e);
-					print("type not found: " + r.getTypeDefinition().toString());
+		switch (r.getNodeClass()) {
+		case Object:
+		case Variable:
+			try {
+				// Find the type from the NodeCache
+				UaNode type = client.getAddressSpace().getNode(r.getTypeDefinition());
+				if (type != null)
+					typeStr = type.getDisplayName().getText();
+				else
 					typeStr = r.getTypeDefinition().getValue().toString();
-				}
-				break;
-			default:
+			} catch (AddressSpaceException e) {
+				println(e);
+				print("type not found: " + r.getTypeDefinition().toString());
+				typeStr = r.getTypeDefinition().getValue().toString();
+			}
+			break;
+		default:
 			typeStr = nodeClassToStr(r.getNodeClass());
 			break;
 		}
 		return String.format("%s%s (ReferenceType=%s, BrowseName=%s%s)", r.getDisplayName().getText(), ": " + typeStr,
 				referenceTypeStr, r.getBrowseName(), r.getIsForward() ? "" : " [Inverse]");
 	}
-	
-	protected static String dateTimeToString(String title, DateTime timestamp, UnsignedShort picoSeconds) 
-	{
-		if ((timestamp != null) && !timestamp.equals(DateTime.MIN_VALUE)) 
-		{
+
+	protected static String dateTimeToString(String title, DateTime timestamp, UnsignedShort picoSeconds) {
+		if ((timestamp != null) && !timestamp.equals(DateTime.MIN_VALUE)) {
 			SimpleDateFormat format = new SimpleDateFormat("yyyy MMM dd (zzz) HH:mm:ss.SSS");
 			StringBuilder sb = new StringBuilder(title);
 			sb.append(format.format(timestamp.getCalendar(TimeZone.getDefault()).getTime()));
@@ -308,8 +300,7 @@ public class Asgard
 		return "";
 	}
 
-	protected String getCurrentNodeAsString(UaNode node) 
-	{
+	protected String getCurrentNodeAsString(UaNode node) {
 		String nodeStr = "";
 		String typeStr = "";
 		String analogInfoStr = "";
@@ -323,17 +314,14 @@ public class Asgard
 		// properties, for example to show the engineering units and
 		// range for all AnalogItems
 		if (node instanceof AnalogItemType)
-			try 
-			{
+			try {
 				AnalogItemType analogNode = (AnalogItemType) node;
 				EUInformation units = analogNode.getEngineeringUnits();
 				analogInfoStr = units == null ? "" : " Units=" + units.getDisplayName().getText();
 				Range range = analogNode.getEuRange();
 				analogInfoStr = analogInfoStr
 						+ (range == null ? "" : String.format(" Range=(%f; %f)", range.getLow(), range.getHigh()));
-			} 
-			catch (Exception e) 
-			{
+			} catch (Exception e) {
 				println(e);
 			}
 
@@ -341,51 +329,41 @@ public class Asgard
 				analogInfoStr);
 		return currentNodeStr;
 	}
-		
-	private String nodeClassToStr(NodeClass nodeClass) 
-		{
-			return "[" + nodeClass + "]";
-		}
-	
-	public NodeId selectNode(int selection) throws ServiceResultException
-	{
+
+	private String nodeClassToStr(NodeClass nodeClass) {
+		return "[" + nodeClass + "]";
+	}
+
+	public NodeId selectNode(int selection) throws ServiceResultException {
 		ReferenceDescription r = references.get(selection);
 		target = client.getAddressSpace().getNamespaceTable().toNodeId(r.getNodeId());
 		return target;
 	}
-	
-	protected void readAttributeId() 
-	{
+
+	protected void readAttributeId() {
 		log.info("[-- NODE ATTRIBUTES LIST --]");
 		for (long i = Attributes.NodeId.getValue(); i < Attributes.UserExecutable.getValue(); i++)
 			printf("%d - %s\n", i, AttributesUtil.toString(UnsignedInteger.valueOf(i)));
 	}
-	
-	protected void subscribe(NodeId nodeId) throws ServiceException, StatusException, InterruptedException
-	{
-		readAttributeId();
-		MonitoredDataItem item = new MonitoredDataItem(nodeId, attributeId, MonitoringMode.Reporting);
-		subscription.addItem(item);
-		client.addSubscription(subscription);
-		item.setDataChangeListener(dataChangeListener);
-		println("");
-		log.info("[-- READING VALUES FROM THE SERVER NODE --]");
-		Thread.sleep(10000);
+
+	protected void subscribe(ArrayList<NodeId> array) throws ServiceException, StatusException, InterruptedException {
+		for (int i = 0; i < array.size(); i++) {
+			MonitoredDataItem item = new MonitoredDataItem(array.get(i), attributeId, MonitoringMode.Reporting);
+			subscription.addItem(item);
+			client.addSubscription(subscription);
+			item.setDataChangeListener(dataChangeListener);
+		}
 	}
-	
-	private static MonitoredDataItemListener dataChangeListener =
-			new MonitoredDataItemListener() 
-	{
-			@Override
-			public void onDataChange(MonitoredDataItem sender, DataValue prevValue, DataValue value) 
-			{
-				MonitoredItem i = sender;
-				println(dataValueToString(i.getNodeId(), i.getAttributeId(), value));
-			}
+
+	private static MonitoredDataItemListener dataChangeListener = new MonitoredDataItemListener() {
+		@Override
+		public void onDataChange(MonitoredDataItem sender, DataValue prevValue, DataValue value) {
+			MonitoredItem i = sender;
+			println(dataValueToString(i.getNodeId(), i.getAttributeId(), value));
+		}
 	};
-	
-	protected static String dataValueToString(NodeId nodeId, UnsignedInteger attributeId, DataValue value) 
-	{
+
+	protected static String dataValueToString(NodeId nodeId, UnsignedInteger attributeId, DataValue value) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Node: ");
 		sb.append(nodeId);
@@ -393,20 +371,17 @@ public class Asgard
 		sb.append(AttributesUtil.toString(attributeId));
 		sb.append(" | Status: ");
 		sb.append(value.getStatusCode());
-		if (value.getStatusCode().isNotBad()) 
-		{
+		if (value.getStatusCode().isNotBad()) {
 			sb.append(" | Value: ");
 			if (value.isNull())
 				sb.append("NULL");
-			else 
-			{
+			else {
 				if (Attributes.Value.equals(attributeId))
 					try {
 						UaVariable variable = (UaVariable) client.getAddressSpace().getNode(nodeId);
 						if (variable == null)
 							sb.append("(Cannot read node datatype from the server) ");
-						else 
-						{
+						else {
 
 							NodeId dataTypeId = variable.getDataTypeId();
 							UaType dataType = variable.getDataType();
@@ -421,9 +396,9 @@ public class Asgard
 								else
 									sb.append("(DataTypeId: " + dataTypeId + ")");
 						}
-					} 
-					catch (ServiceException e) {} 
-					catch (AddressSpaceException e) {}
+					} catch (ServiceException e) {
+					} catch (AddressSpaceException e) {
+					}
 				final Object v = value.getValue().getValue();
 				if (value.getValue().isArray())
 					sb.append(MultiDimensionArrayUtils.toString(v));
@@ -435,8 +410,9 @@ public class Asgard
 		sb.append(dateTimeToString(" | SourceTimestamp: ", value.getSourceTimestamp(), value.getSourcePicoseconds()));
 		return sb.toString();
 	}
-	
-	protected void write(NodeId nodeId) throws ServiceException, AddressSpaceException, StatusException, InterruptedException {
+
+	protected void write(NodeId nodeId)
+			throws ServiceException, AddressSpaceException, StatusException, InterruptedException {
 
 		UaNode node = client.getAddressSpace().getNode(nodeId);
 		println("");
@@ -456,8 +432,8 @@ public class Asgard
 		}
 
 		boolean value = true;
-		println("Value: " + String.valueOf(value));	
-		
+		println("Value: " + String.valueOf(value));
+
 		client.writeAttribute(nodeId, attributeId, value);
 		Thread.sleep(1000);
 		println("");

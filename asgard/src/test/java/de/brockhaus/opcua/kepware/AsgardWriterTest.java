@@ -17,6 +17,13 @@ import com.prosysopc.ua.client.InvalidServerEndpointException;
 
 import de.brockhaus.opcua.kepware.Asgard;
 
+/**
+ * 
+ * @author jperez@brockhaus-gruppe.de, Nov 16, 2015
+ * Copyright by: Brockhaus Group (Wiesbaden, Heidelberg, Bhubaneswar/India)
+ *
+ */
+
 public class AsgardWriterTest 
 {
 	@Test

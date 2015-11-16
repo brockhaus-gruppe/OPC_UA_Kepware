@@ -16,8 +16,21 @@ import com.prosysopc.ua.client.InvalidServerEndpointException;
 
 import de.brockhaus.opcua.kepware.Asgard;
 
+/**
+ * 
+ * @author jperez@brockhaus-gruppe.de, Nov 16, 2015
+ * Copyright by: Brockhaus Group (Wiesbaden, Heidelberg, Bhubaneswar/India)
+ *
+ */
+
 public class AsgardReaderTest 
 {
+	public static void main(String[] args) throws InvalidServerEndpointException, UnknownHostException, ConnectException, SessionActivationException, URISyntaxException, SecureIdentityException, IOException, ServiceException, StatusException, ServiceResultException, InterruptedException 
+	{
+		AsgardReaderTest art = new AsgardReaderTest();
+		art.test();
+	}
+	
 	@Test
 	public void test() throws UnknownHostException, URISyntaxException, SecureIdentityException, IOException, InvalidServerEndpointException, ConnectException, SessionActivationException, ServiceException, StatusException, ServiceResultException, InterruptedException 
 	{
