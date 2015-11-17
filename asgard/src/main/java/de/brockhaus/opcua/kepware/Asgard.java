@@ -133,41 +133,40 @@ public class Asgard
 
 		log.info("[-- READING VALUES FROM THE SERVER NODE --]");
 		while(true);
-//		Thread.sleep(10000);
 	}
 
 	public void doWrite() throws ServiceException, StatusException, ServiceResultException, InterruptedException,
 			AddressSpaceException {
 		// select the root node & browse the references for the root node
-		NodeId nodeId = Identifiers.RootFolder;
-		browse(nodeId);
+				NodeId nodeId = Identifiers.RootFolder;
+				browse(nodeId);
 
-		// select the Objects node & browse the references for this node
-		nodeId = selectNode(1);
-		browse(nodeId);
+				// select the Objects node & browse the references for this node
+				nodeId = selectNode(1);
+				browse(nodeId);
 
-		// select the Channel node "Siemens PLC S7-1200" & browse its references
-		nodeId = selectNode(14);
-		browse(nodeId);
+				// select the Channel node "Siemens PLC S7-1200" & browse its references
+				nodeId = selectNode(14);
+				browse(nodeId);
 
-		// select the Device node "s7-1200" & browse its references
-		nodeId = selectNode(2);
-		browse(nodeId);
+				// select the Device node "s7-1200" & browse its references
+				nodeId = selectNode(2);
+				browse(nodeId);
 
-		// select the Tags node "Inputs" & browse its references
-		nodeId = selectNode(3);
-		browse(nodeId);
+				// select the node "Outputs" & browse its references
+				nodeId = selectNode(4);
+				browse(nodeId);
 
-		// select the Tags node "Push-button slider 1 front" & browse its
-		// references
-		nodeId = selectNode(5);
-		browse(nodeId);
+				// select the tags corresponding to "Outputs"
+				int[] tags = {0};
+				for (int i = 0; i < tags.length; i++)
+					TagsArray.add(i, selectNode(tags[i]));
 
-		// subscribe to data changes
-		// subscribe(nodeId);
-
-		// write values
-		write(nodeId);
+				// subscribe to data changes for the selected tags
+				subscribe(TagsArray);
+				
+				// write values
+				write(TagsArray);
 	}
 
 	public void disconnect() throws ServiceException {
@@ -411,31 +410,33 @@ public class Asgard
 		return sb.toString();
 	}
 
-	protected void write(NodeId nodeId)
-			throws ServiceException, AddressSpaceException, StatusException, InterruptedException {
-
-		UaNode node = client.getAddressSpace().getNode(nodeId);
+	protected void write(ArrayList<NodeId> tags)
+			throws ServiceException, AddressSpaceException, StatusException, InterruptedException 
+	{
 		println("");
 		log.info("[-- WRITING VALUES TO THE SERVER NODE --]");
-		println("Writing to node " + nodeId + " - " + node.getDisplayName().getText());
+		
+		for(int i = 0; i < tags.size(); i++)
+		{
+			UaNode node = client.getAddressSpace().getNode(tags.get(i));
+			println("Writing to node " + tags.get(i) + " - " + node.getDisplayName().getText());
 
-		// Find the DataType if setting Value - for other properties you must
-		// find the correct data type yourself
-		UaDataType dataType = null;
-		if (attributeId.equals(Attributes.Value) && (node instanceof UaVariable)) {
-			UaVariable v = (UaVariable) node;
-			// Initialize DataType node, if it is not initialized yet
-			if (v.getDataType() == null)
-				v.setDataType(client.getAddressSpace().getType(v.getDataTypeId()));
-			dataType = (UaDataType) v.getDataType();
-			println("DataType: " + dataType.getDisplayName().getText());
+			// Find the DataType if setting Value - for other properties you must
+			// find the correct data type yourself
+			UaDataType dataType = null;
+			if (attributeId.equals(Attributes.Value) && (node instanceof UaVariable)) 
+			{
+				UaVariable v = (UaVariable) node;
+				// Initialize DataType node, if it is not initialized yet
+				if (v.getDataType() == null)
+					v.setDataType(client.getAddressSpace().getType(v.getDataTypeId()));
+				dataType = (UaDataType) v.getDataType();
+				println("DataType: " + dataType.getDisplayName().getText());
+				boolean value = true;
+				println("Value: " + String.valueOf(value));
+				client.writeAttribute(tags.get(i), attributeId, value);
+			}
 		}
-
-		boolean value = true;
-		println("Value: " + String.valueOf(value));
-
-		client.writeAttribute(nodeId, attributeId, value);
-		Thread.sleep(1000);
-		println("");
+		Thread.sleep(3000);
 	}
 }
