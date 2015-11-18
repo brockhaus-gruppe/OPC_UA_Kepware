@@ -131,7 +131,7 @@ public class Asgard
 		// subscribe to data changes for the selected tags
 		subscribe(TagsArray);
 
-		log.info("[-- READING VALUES FROM THE SERVER NODE --]");
+		log.info("[-- READING VALUES CHANGES FROM THE SERVER NODES --]");
 		while(true);
 	}
 
@@ -158,7 +158,7 @@ public class Asgard
 				browse(nodeId);
 
 				// select the tags corresponding to "Outputs"
-				int[] tags = {0};
+				int[] tags = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 				for (int i = 0; i < tags.length; i++)
 					TagsArray.add(i, selectNode(tags[i]));
 
@@ -414,7 +414,7 @@ public class Asgard
 			throws ServiceException, AddressSpaceException, StatusException, InterruptedException 
 	{
 		println("");
-		log.info("[-- WRITING VALUES TO THE SERVER NODE --]");
+		log.info("[-- WRITING VALUES TO THE SERVER NODES --]");
 		
 		for(int i = 0; i < tags.size(); i++)
 		{
@@ -437,6 +437,8 @@ public class Asgard
 				client.writeAttribute(tags.get(i), attributeId, value);
 			}
 		}
-		Thread.sleep(3000);
+		println("");
+		log.info("[-- READING VALUES CHANGES FROM THE SERVER NODES --]");
+		while(true);
 	}
 }
