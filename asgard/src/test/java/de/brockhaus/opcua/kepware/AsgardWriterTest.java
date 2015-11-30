@@ -21,26 +21,34 @@ import de.brockhaus.opcua.kepware.Asgard;
  *
  */
 
-public class AsgardWriterTest 
-{
-	public static void main(String[] args) throws InvalidServerEndpointException, UnknownHostException, ConnectException, SessionActivationException, URISyntaxException, SecureIdentityException, IOException, ServiceException, StatusException, ServiceResultException, InterruptedException, AddressSpaceException 
-	{
+public class AsgardWriterTest{
+	
+	public static void main(String[] args) throws InvalidServerEndpointException, 
+		UnknownHostException, ConnectException, SessionActivationException, 
+		URISyntaxException, SecureIdentityException, IOException, ServiceException, 
+		StatusException, ServiceResultException, InterruptedException, 
+		AddressSpaceException{
+		
 		AsgardWriterTest awt = new AsgardWriterTest();
 		awt.test();
 	}
 	
 	// use appropriate annotation to the junit test
 	@Test
-	public void test() throws UnknownHostException, URISyntaxException, SecureIdentityException, IOException, InvalidServerEndpointException, ConnectException, SessionActivationException, ServiceException, StatusException, ServiceResultException, InterruptedException, AddressSpaceException 
-	{
+	public void test() throws UnknownHostException, URISyntaxException, 
+		SecureIdentityException, IOException, InvalidServerEndpointException, 
+		ConnectException, SessionActivationException, ServiceException, StatusException, 
+		ServiceResultException, InterruptedException, AddressSpaceException{
+		
 		Asgard aw = new Asgard();
-		// creates all the connection initial configuration needed to connect to the server
+		/* create all the connection initial configuration needed to connect 
+	    to the server */
 		aw.init();
-		// establishes the connection to the server
+		// establish the connection to the server
 		aw.connect();
-		// writes a constant value for the selected signal/tag.
+		// write a constant value for the selected tags.
 		aw.doWrite();
-		// Allows to disconnect from the server.
+		// Allow to disconnect from the server.
 		aw.disconnect();
 	}
 }

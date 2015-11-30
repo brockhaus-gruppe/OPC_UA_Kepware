@@ -451,8 +451,7 @@ public class Asgard {
 
 	// write a predefined value for the tags from the ArrayList array
 	protected void write(ArrayList<NodeId> tags)
-			throws ServiceException, AddressSpaceException, StatusException, InterruptedException 
-	{
+			throws ServiceException, AddressSpaceException, StatusException, InterruptedException{
 		println("");
 		log.info("[-- WRITING VALUES TO THE SERVER NODES --]");
 		
