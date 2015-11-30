@@ -70,14 +70,16 @@ public class Asgard {
 	static UaClient client;
 	// define the server you are connecting to
 	static final String SERVERURI = "opc.tcp://127.0.0.1:49320";
-	// define a target NodeId for the selected node
+	// define a target node Id for the selected node
 	NodeId target;
 	// create an array of tags which can be read or written
 	ArrayList<NodeId> TagsArray = new ArrayList<NodeId>();
-	// define a list of references(children or hierarchical relationships) for each selected node
+	// define a list of references(children or hierarchical relationships) 
+	// for each selected node
 	List<ReferenceDescription> references;
-	// this variable selects the possible data that can be obtained from the node
-	// In this case, the parameter "value" of the node (integer number 13)
+	/* this variable selects the possible data that can be obtained from the node.
+	In this case, the parameter "value" of the node (integer number 13 in the 
+	node attributes list).*/
 	UnsignedInteger attributeId = UnsignedInteger.valueOf(13);
 	// allow to monitor variables that are changing in the server
 	Subscription subscription = new Subscription();
@@ -176,7 +178,7 @@ public class Asgard {
 	}
 
 	public void disconnect() throws ServiceException {
-		// remove the subscription
+		// remove the subscription from the client
 		client.removeSubscription(subscription);
 		// disconnect from the server
 		client.disconnect();
@@ -211,10 +213,10 @@ public class Asgard {
 		// create an Application Description which is sent to the server
 		ApplicationDescription appDescription = new ApplicationDescription();
 		appDescription.setApplicationName(new LocalizedText("OpcuaClient", Locale.ENGLISH));
-		// 'localhost' (all lower case) in the ApplicationName and ApplicationURI
-		// is converted to the actual host name of the computer in which the application
-		// is run.
-		// ApplicationUri is a unique identifier for each running instance.
+		/* 'localhost' (all lower case) in the ApplicationName and ApplicationURI
+		is converted to the actual host name of the computer in which the application
+		is run.*/
+		// ApplicationUri is a unique identifier for each running instance
 		appDescription.setApplicationUri("urn:localhost:UA:OpcuaClient");
 		// identify the product and should therefore be the same for all instances
 		appDescription.setProductUri("urn:prosysopc.com:UA:OpcuaClient");
@@ -229,6 +231,7 @@ public class Asgard {
 	}
 
 	public void browse(NodeId nodeId) throws ServiceException, StatusException {
+		// print information about the selected node currently
 		printCurrentNode(nodeId);
 		// define a limit of 1000 references per call to the server
 		client.getAddressSpace().setMaxReferencesPerNode(1000);
@@ -237,6 +240,7 @@ public class Asgard {
 		// define the references of the selected node by Id
 		references = client.getAddressSpace().browse(nodeId);
 		log.info("[-- NODE HIERARCHICAL REFERENCES --]");
+		// print the references
 		for (int i = 0; i < references.size(); i++)
 			printf("%d - %s\n", i, referenceToString(references.get(i)));
 		println("");
@@ -245,7 +249,7 @@ public class Asgard {
 	protected void printCurrentNode(NodeId nodeId) {
 		log.info("[-- SELECTED NODE --]");
 		if (client.isConnected())
-			// find the node from the NodeCache and print its corresponding information
+			// find the node from the NodeCache
 			try {
 				UaNode node = client.getAddressSpace().getNode(nodeId);
 
@@ -253,6 +257,7 @@ public class Asgard {
 					return;
 				String currentNodeStr = getCurrentNodeAsString(node);
 				if (currentNodeStr != null) {
+					// print the corresponding information
 					println(currentNodeStr);
 					println("");
 				}
@@ -262,6 +267,7 @@ public class Asgard {
 				println(e);
 			}
 	}
+	
 	// convert the node reference information to String format
 	protected String referenceToString(ReferenceDescription r)
 			throws ServerConnectionException, ServiceException, StatusException {
@@ -286,7 +292,7 @@ public class Asgard {
 		case Object:
 		case Variable:
 			try {
-				// Find the type from the NodeCache
+				// find the type from the NodeCache
 				UaNode type = client.getAddressSpace().getNode(r.getTypeDefinition());
 				if (type != null)
 					typeStr = type.getDisplayName().getText();
@@ -319,7 +325,7 @@ public class Asgard {
 		return "";
 	}
 	
-	// show information about the current selected node
+	// show information about the selected current node
 	protected String getCurrentNodeAsString(UaNode node) {
 		String nodeStr = "";
 		String typeStr = "";
@@ -330,9 +336,9 @@ public class Asgard {
 			type = ((UaInstance) node).getTypeDefinition();
 		typeStr = (type == null ? nodeClassToStr(node.getNodeClass()) : type.getDisplayName().getText());
 
-		// This is the way to access type specific nodes and their
-		// properties, for example to show the engineering units and
-		// range for all AnalogItems
+		/* This is the way to access type specific nodes and their
+		properties, for example to show the engineering units and
+		range for all AnalogItems */
 		if (node instanceof AnalogItemType)
 			try {
 				AnalogItemType analogNode = (AnalogItemType) node;
@@ -355,15 +361,16 @@ public class Asgard {
 		return "[" + nodeClass + "]";
 	}
 
-	// select the next node according to its integer value
-	// in the list of references of the current node
+	/* select the next node according to its integer value
+	in the list of references of the current node */
 	public NodeId selectNode(int selection) throws ServiceResultException {
 		ReferenceDescription r = references.get(selection);
 		target = client.getAddressSpace().getNamespaceTable().toNodeId(r.getNodeId());
 		return target;
 	}
 
-	// list the possible attributes/properties Ids of the current node
+	/* list the possible attributes/properties Ids of the current node. 
+	Ids are integer numbers */
 	protected void readAttributeId() {
 		log.info("[-- NODE ATTRIBUTES LIST --]");
 		for (long i = Attributes.NodeId.getValue(); i < Attributes.UserExecutable.getValue(); i++)
@@ -371,7 +378,7 @@ public class Asgard {
 	}
 
 	protected void subscribe(ArrayList<NodeId> array) throws ServiceException, StatusException, InterruptedException {
-		// define an array of monitored nodes(items) and "for loop" for them
+		// define a for loop for the array of monitored nodes(items)
 		for (int i = 0; i < array.size(); i++) {
 			// include a number of monitored items, which you listen to
 			MonitoredDataItem item = new MonitoredDataItem(array.get(i), attributeId, MonitoringMode.Reporting);
@@ -383,6 +390,7 @@ public class Asgard {
 			item.setDataChangeListener(dataChangeListener);
 		}
 	}
+	
 	// define the corresponding listener that monitors and print value changes on items
 	private static MonitoredDataItemListener dataChangeListener = new MonitoredDataItemListener() {
 		@Override
@@ -391,6 +399,7 @@ public class Asgard {
 			println(dataValueToString(i.getNodeId(), i.getAttributeId(), value));
 		}
 	};
+	
 	// print the information about the value change on item according a predefined format
 	protected static String dataValueToString(NodeId nodeId, UnsignedInteger attributeId, DataValue value) {
 		StringBuilder sb = new StringBuilder();
@@ -453,8 +462,8 @@ public class Asgard {
 			UaNode node = client.getAddressSpace().getNode(tags.get(i));
 			println("Writing to node " + tags.get(i) + " - " + node.getDisplayName().getText());
 
-			// find the DataType if setting Value - for other properties you must
-			// find the correct data type yourself
+			/* find the DataType if setting Value - for other properties you must
+		 	find the correct data type yourself */
 			UaDataType dataType = null;
 			if (attributeId.equals(Attributes.Value) && (node instanceof UaVariable)) 
 			{
