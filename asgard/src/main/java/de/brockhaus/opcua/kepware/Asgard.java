@@ -64,40 +64,46 @@ import com.prosysopc.ua.types.opcua.AnalogItemType;
  *
  */
 
-public class Asgard 
-{
+public class Asgard {
 	
-	/** */
+	// create an UaClient object which encapsulates the connection to the OPC UA server
 	static UaClient client;
-	
+	// define the server you are connecting to
 	static final String SERVERURI = "opc.tcp://127.0.0.1:49320";
-	
+	// define a target NodeId for the selected node
 	NodeId target;
-	
+	// create an array of tags which can be read or written
 	ArrayList<NodeId> TagsArray = new ArrayList<NodeId>();
-	
+	// define a list of references(children or hierarchical relationships) for each selected node
 	List<ReferenceDescription> references;
+	// this variable selects the possible data that can be obtained from the node
+	// In this case, the parameter "value" of the node (integer number 13)
 	UnsignedInteger attributeId = UnsignedInteger.valueOf(13);
+	// allow to monitor variables that are changing in the server
 	Subscription subscription = new Subscription();
+	
 	Logger log = Logger.getLogger(this.getClass().getName());
 
-	// Constructor
 	public Asgard() throws FileNotFoundException, IOException {
+		// define logging behaviour establishing properties by a configuration file
 		Properties props = new Properties();
 		props.load(new FileInputStream("src/main/resources/log4j.properties"));
 		PropertyConfigurator.configure(props);
 	}
 
-	// Methods
 	public void init() throws URISyntaxException, UnknownHostException, SecureIdentityException, IOException {
+		// initiate the connection to the server
 		client = new UaClient(SERVERURI);
+		// define the security level in the OPC UA binary communications
 		client.setSecurityMode(SecurityMode.NONE);
+		// create an application instance certificate
 		initialize(client);
 		log.info("[-- STARTING INITIAL SETUP --]");
 	}
 
 	public void connect()
 			throws InvalidServerEndpointException, ConnectException, SessionActivationException, ServiceException {
+		// connect to the server
 		client.connect();
 		log.info("[-- CONNECTED TO THE SERVER --]");
 	}
@@ -170,13 +176,16 @@ public class Asgard
 	}
 
 	public void disconnect() throws ServiceException {
+		// remove the subscription
 		client.removeSubscription(subscription);
+		// disconnect from the server
 		client.disconnect();
 		println("");
 		log.info("[-- DISCONNECTED FROM THE SERVER --]");
 
 	}
-
+	
+	// define some shortcut methods for printing on the console
 	public void printf(String s) {
 		System.out.printf(s);
 	}
@@ -196,26 +205,36 @@ public class Asgard
 	public static void printf(String format, Object... args) {
 		System.out.printf(format, args);
 	}
-
+	
+	// define some characteristics of the OPC UA Client application
 	public static void initialize(UaClient client) throws SecureIdentityException, IOException, UnknownHostException {
-		// *** Application Description is sent to the server
+		// create an Application Description which is sent to the server
 		ApplicationDescription appDescription = new ApplicationDescription();
 		appDescription.setApplicationName(new LocalizedText("OpcuaClient", Locale.ENGLISH));
-		// 'localhost' (all lower case) in the URI is converted to the actual
-		// host name of the computer in which the application is run
+		// 'localhost' (all lower case) in the ApplicationName and ApplicationURI
+		// is converted to the actual host name of the computer in which the application
+		// is run.
+		// ApplicationUri is a unique identifier for each running instance.
 		appDescription.setApplicationUri("urn:localhost:UA:OpcuaClient");
+		// identify the product and should therefore be the same for all instances
 		appDescription.setProductUri("urn:prosysopc.com:UA:OpcuaClient");
+		// define the type of application
 		appDescription.setApplicationType(ApplicationType.Client);
-
+		
+		// define the client application certificate
 		final ApplicationIdentity identity = new ApplicationIdentity();
 		identity.setApplicationDescription(appDescription);
+		// assign the identity to the Client
 		client.setApplicationIdentity(identity);
 	}
 
 	public void browse(NodeId nodeId) throws ServiceException, StatusException {
 		printCurrentNode(nodeId);
+		// define a limit of 1000 references per call to the server
 		client.getAddressSpace().setMaxReferencesPerNode(1000);
+		// receive only the hierarchical references between the nodes
 		client.getAddressSpace().setReferenceTypeId(Identifiers.HierarchicalReferences);
+		// define the references of the selected node by Id
 		references = client.getAddressSpace().browse(nodeId);
 		log.info("[-- NODE HIERARCHICAL REFERENCES --]");
 		for (int i = 0; i < references.size(); i++)
@@ -226,7 +245,7 @@ public class Asgard
 	protected void printCurrentNode(NodeId nodeId) {
 		log.info("[-- SELECTED NODE --]");
 		if (client.isConnected())
-			// Find the node from the NodeCache
+			// find the node from the NodeCache and print its corresponding information
 			try {
 				UaNode node = client.getAddressSpace().getNode(nodeId);
 
@@ -243,14 +262,14 @@ public class Asgard
 				println(e);
 			}
 	}
-
+	// convert the node reference information to String format
 	protected String referenceToString(ReferenceDescription r)
 			throws ServerConnectionException, ServiceException, StatusException {
 		if (r == null)
 			return "";
 		String referenceTypeStr = null;
 		try {
-			// Find the reference type from the NodeCache
+			// find the reference type from the NodeCache
 			UaReferenceType referenceType = (UaReferenceType) client.getAddressSpace().getType(r.getReferenceTypeId());
 			if ((referenceType != null) && (referenceType.getDisplayName() != null))
 				if (r.getIsForward())
@@ -286,7 +305,8 @@ public class Asgard
 		return String.format("%s%s (ReferenceType=%s, BrowseName=%s%s)", r.getDisplayName().getText(), ": " + typeStr,
 				referenceTypeStr, r.getBrowseName(), r.getIsForward() ? "" : " [Inverse]");
 	}
-
+	
+	// method for manipulating dates and convert them into Strings
 	protected static String dateTimeToString(String title, DateTime timestamp, UnsignedShort picoSeconds) {
 		if ((timestamp != null) && !timestamp.equals(DateTime.MIN_VALUE)) {
 			SimpleDateFormat format = new SimpleDateFormat("yyyy MMM dd (zzz) HH:mm:ss.SSS");
@@ -298,7 +318,8 @@ public class Asgard
 		}
 		return "";
 	}
-
+	
+	// show information about the current selected node
 	protected String getCurrentNodeAsString(UaNode node) {
 		String nodeStr = "";
 		String typeStr = "";
@@ -329,16 +350,20 @@ public class Asgard
 		return currentNodeStr;
 	}
 
+	// show information about the node class
 	private String nodeClassToStr(NodeClass nodeClass) {
 		return "[" + nodeClass + "]";
 	}
 
+	// select the next node according to its integer value
+	// in the list of references of the current node
 	public NodeId selectNode(int selection) throws ServiceResultException {
 		ReferenceDescription r = references.get(selection);
 		target = client.getAddressSpace().getNamespaceTable().toNodeId(r.getNodeId());
 		return target;
 	}
 
+	// list the possible attributes/properties Ids of the current node
 	protected void readAttributeId() {
 		log.info("[-- NODE ATTRIBUTES LIST --]");
 		for (long i = Attributes.NodeId.getValue(); i < Attributes.UserExecutable.getValue(); i++)
@@ -346,14 +371,19 @@ public class Asgard
 	}
 
 	protected void subscribe(ArrayList<NodeId> array) throws ServiceException, StatusException, InterruptedException {
+		// define an array of monitored nodes(items) and "for loop" for them
 		for (int i = 0; i < array.size(); i++) {
+			// include a number of monitored items, which you listen to
 			MonitoredDataItem item = new MonitoredDataItem(array.get(i), attributeId, MonitoringMode.Reporting);
+			// add the monitored item to the subscription
 			subscription.addItem(item);
+			// add the subscription to the client
 			client.addSubscription(subscription);
+			// establish a listener for each item
 			item.setDataChangeListener(dataChangeListener);
 		}
 	}
-
+	// define the corresponding listener that monitors and print value changes on items
 	private static MonitoredDataItemListener dataChangeListener = new MonitoredDataItemListener() {
 		@Override
 		public void onDataChange(MonitoredDataItem sender, DataValue prevValue, DataValue value) {
@@ -361,7 +391,7 @@ public class Asgard
 			println(dataValueToString(i.getNodeId(), i.getAttributeId(), value));
 		}
 	};
-
+	// print the information about the value change on item according a predefined format
 	protected static String dataValueToString(NodeId nodeId, UnsignedInteger attributeId, DataValue value) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Node: ");
@@ -410,6 +440,7 @@ public class Asgard
 		return sb.toString();
 	}
 
+	// write a predefined value for the tags from the ArrayList array
 	protected void write(ArrayList<NodeId> tags)
 			throws ServiceException, AddressSpaceException, StatusException, InterruptedException 
 	{
@@ -418,27 +449,32 @@ public class Asgard
 		
 		for(int i = 0; i < tags.size(); i++)
 		{
+			// select the node corresponding to the selected tag
 			UaNode node = client.getAddressSpace().getNode(tags.get(i));
 			println("Writing to node " + tags.get(i) + " - " + node.getDisplayName().getText());
 
-			// Find the DataType if setting Value - for other properties you must
+			// find the DataType if setting Value - for other properties you must
 			// find the correct data type yourself
 			UaDataType dataType = null;
 			if (attributeId.equals(Attributes.Value) && (node instanceof UaVariable)) 
 			{
 				UaVariable v = (UaVariable) node;
-				// Initialize DataType node, if it is not initialized yet
+				// initialize DataType node, if it is not initialized yet
 				if (v.getDataType() == null)
 					v.setDataType(client.getAddressSpace().getType(v.getDataTypeId()));
 				dataType = (UaDataType) v.getDataType();
 				println("DataType: " + dataType.getDisplayName().getText());
+				// define the value for the selected node.
+				// In this case, a boolean value
 				boolean value = true;
 				println("Value: " + String.valueOf(value));
+				// write the value
 				client.writeAttribute(tags.get(i), attributeId, value);
 			}
 		}
 		println("");
 		log.info("[-- READING VALUES CHANGES FROM THE SERVER NODES --]");
+		// let the subscription print the value changes
 		while(true);
 	}
 }

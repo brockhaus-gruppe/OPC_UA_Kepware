@@ -24,9 +24,7 @@ public class AsgardReaderTest
 {
 	public static void main(String[] args) throws InvalidServerEndpointException, UnknownHostException, ConnectException, SessionActivationException, URISyntaxException, SecureIdentityException, IOException, ServiceException, StatusException, ServiceResultException, InterruptedException 
 	{
-		// instantiates the AsgardReaderTest class
 		AsgardReaderTest art = new AsgardReaderTest();
-		// runs the test method
 		art.test();
 	}
 	
@@ -34,7 +32,6 @@ public class AsgardReaderTest
 	@Test
 	public void test() throws UnknownHostException, URISyntaxException, SecureIdentityException, IOException, InvalidServerEndpointException, ConnectException, SessionActivationException, ServiceException, StatusException, ServiceResultException, InterruptedException 
 	{
-		// instantiates the Asgard class
 		Asgard ar = new Asgard();
 		// creates all the connection initial configuration needed to connect to the server
 		ar.init();
