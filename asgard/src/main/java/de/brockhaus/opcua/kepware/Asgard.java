@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -68,19 +69,25 @@ public class Asgard {
 	
 	// create an UaClient object which encapsulates the connection to the OPC UA server
 	static UaClient client;
+	
 	// define the server you are connecting to
 	static final String SERVERURI = "opc.tcp://127.0.0.1:49320";
+	
 	// define a target node Id for the selected node
 	NodeId target;
+	
 	// create an array of tags which can be read or written
 	ArrayList<NodeId> TagsArray = new ArrayList<NodeId>();
+	
 	// define a list of references(children or hierarchical relationships) 
 	// for each selected node
 	List<ReferenceDescription> references;
+	
 	/* this variable selects the possible data that can be obtained from the node.
 	In this case, the parameter "value" of the node (integer number 13 in the 
 	node attributes list).*/
 	UnsignedInteger attributeId = UnsignedInteger.valueOf(13);
+	
 	// allow to monitor variables that are changing in the server
 	Subscription subscription = new Subscription();
 	
@@ -96,10 +103,13 @@ public class Asgard {
 	public void init() throws URISyntaxException, UnknownHostException, SecureIdentityException, IOException {
 		// initiate the connection to the server
 		client = new UaClient(SERVERURI);
+		
 		// define the security level in the OPC UA binary communications
 		client.setSecurityMode(SecurityMode.NONE);
+		
 		// create an application instance certificate
 		initialize(client);
+		
 		log.info("[-- STARTING INITIAL SETUP --]");
 	}
 
@@ -140,6 +150,8 @@ public class Asgard {
 		subscribe(TagsArray);
 
 		log.info("[-- READING VALUES CHANGES FROM THE SERVER NODES --]");
+		
+		// looping endlessly
 		while(true);
 	}
 
@@ -166,13 +178,14 @@ public class Asgard {
 				browse(nodeId);
 
 				// select the tags corresponding to "Outputs"
-				int[] tags = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+				//int[] tags = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+				int[] tags = {1};
 				for (int i = 0; i < tags.length; i++)
 					TagsArray.add(i, selectNode(tags[i]));
 
 				// subscribe to data changes for the selected tags
 				subscribe(TagsArray);
-				
+				Thread.sleep(2000);
 				// write values
 				write(TagsArray);
 	}
@@ -384,11 +397,11 @@ public class Asgard {
 			MonitoredDataItem item = new MonitoredDataItem(array.get(i), attributeId, MonitoringMode.Reporting);
 			// add the monitored item to the subscription
 			subscription.addItem(item);
-			// add the subscription to the client
-			client.addSubscription(subscription);
 			// establish a listener for each item
 			item.setDataChangeListener(dataChangeListener);
 		}
+		// add the subscription to the client
+		client.addSubscription(subscription);
 	}
 	
 	// define the corresponding listener that monitors and print value changes on items
@@ -453,13 +466,14 @@ public class Asgard {
 	protected void write(ArrayList<NodeId> tags)
 			throws ServiceException, AddressSpaceException, StatusException, InterruptedException{
 		println("");
-		log.info("[-- WRITING VALUES TO THE SERVER NODES --]");
+		log.info("\n[-- WRITING VALUES TO THE SERVER NODES --]");
 		
 		for(int i = 0; i < tags.size(); i++)
 		{
 			// select the node corresponding to the selected tag
 			UaNode node = client.getAddressSpace().getNode(tags.get(i));
-			println("Writing to node " + tags.get(i) + " - " + node.getDisplayName().getText());
+			println("Writing to node " + tags.get(i) + " - " + node.getDisplayName().getText() 
+					+ " " + new Date(System.currentTimeMillis()));
 
 			/* find the DataType if setting Value - for other properties you must
 		 	find the correct data type yourself */
@@ -474,15 +488,18 @@ public class Asgard {
 				println("DataType: " + dataType.getDisplayName().getText());
 				// define the value for the selected node.
 				// In this case, a boolean value
-				boolean value = true;
-				println("Value: " + String.valueOf(value));
-				// write the value
-				client.writeAttribute(tags.get(i), attributeId, value);
+				String value = "true";
+				Object convertedValue = dataType != null
+							? client.getAddressSpace().getDataTypeConverter().parseVariant(value, dataType) : value;
+					boolean status = client.writeAttribute(tags.get(i), attributeId, convertedValue);
+					Thread.sleep(4000);
+					status = client.writeAttribute(tags.get(i), attributeId, false);
+					if (status)
+						println("OK");
+					else
+						println("OK (completes asynchronously)");
 			}
 		}
-		println("");
-		log.info("[-- READING VALUES CHANGES FROM THE SERVER NODES --]");
-		// let the subscription print the value changes
 		while(true);
 	}
 }
